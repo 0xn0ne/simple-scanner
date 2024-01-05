@@ -4,6 +4,7 @@
 # language.py
 # 轻量化的多语言支持，默认的 gettext 方法操作比较复杂，自开发的程序一般没这么复杂用不到
 import json
+import locale
 import pathlib
 from typing import Dict, Any, Tuple
 
@@ -12,22 +13,23 @@ import yaml
 
 
 class Language:
-    def __init__(self, path: str = 'language.yml', locale: str = 'DEFAULT'):
+    def __init__(self, path: str = 'language.yml', lang: str = None):
         self.path = pathlib.Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.lang = lang if lang else self.get_locale()
         self.raw = self.load()
-        self.locale = locale
 
-    def t(self, text: str, *args_format: Tuple[Any], locale: str = None) -> str:
+    def t(self, text: str, *args_format: Tuple[Any], lang: str = None) -> str:
         if text not in self.raw:
             self.raw[text] = {}
             self.dump()
-        locale = locale if locale else self.locale
+        lang = lang if lang else self.lang
 
-        if locale not in self.raw[text]:
+        print(10001, text, lang, self.lang)
+        if lang not in self.raw[text]:
             ret = text
         else:
-            ret = self.raw[text][locale]
+            ret = self.raw[text][lang]
         if args_format:
             return ret.format(*args_format)
         return ret
@@ -37,17 +39,19 @@ class Language:
 
     def loads(self, content: str, fmt: str = 'yaml') -> Dict[str, Dict[str, str]]:
         if fmt == 'yaml':
-            objt = yaml.safe_load(content)
+            obj_data = yaml.safe_load(content)
         elif fmt == 'toml':
-            objt = toml.loads(content)
+            obj_data = toml.loads(content)
         else:
-            objt = json.loads(content)
-        if not objt:
+            obj_data = json.loads(content)
+        if not obj_data:
             return {}
-        self.raw = objt
+        self.raw = obj_data
         return self.raw
 
     def load(self, fmt: str = 'yaml', encoding: str = 'utf-8', errors: str = None):
+        if not self.path.is_file():
+            return {}
         return self.loads(self.path.read_text(encoding, errors), fmt)
 
     def dumps(self, fmt: str = 'yaml') -> str:
@@ -61,6 +65,10 @@ class Language:
 
     def dump(self, encoding: str = 'utf-8', errors: str = None):
         self.path.write_text(self.dumps(), encoding, errors)
+
+    @staticmethod
+    def get_locale() -> str:
+        return locale.getdefaultlocale()[0]
 
 
 if __name__ == '__main__':

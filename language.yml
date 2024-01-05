@@ -1,0 +1,5 @@
+number of program processes, default 5 processes.: { 'zh_CN': '调用进程数，默认 5 个进程' }
+output file format, available formats json, csv. default csv format.: { 'zh_CN': '输出的文件格式，可用格式有 json、csv，默认输出 csv 格式' }
+scanning targets, or scanning target list files (e.g. "127.0.0.1:80").: { 'zh_CN': '扫描目标，或者扫描目标列表文件（样例："127.0.0.1:80"）' }
+vulnerability plugins name used, default scan all modules (e.g. "CVE-*").: { 'zh_CN': '使用的漏洞插件，默认扫描所有插件（样例："CVE-*"）' }
+whether to automatically use the redirected link if it encounters a redirect, the default is not to use the redirected link.: { 'zh_CN': '如果碰到重定向是否自动使用重定向后的链接，默认不使用重定向链接' }

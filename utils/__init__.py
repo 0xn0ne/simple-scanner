@@ -1,8 +1,13 @@
-import random
-import re
-from typing import Dict, Tuple
+from utils import language
 
-from utils import PLUGIN_TYPE, http_client, url
+
+class PluginType:
+    POC = 40
+    MODULE = 20
+
+
+LANG = language.Language()
+PLUGIN_TYPE = PluginType()
 
 USER_AGENT_LIST = [
     'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36',
@@ -38,51 +43,3 @@ USER_AGENT_LIST = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
     'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
 ]
-
-
-class Plugin:
-    info = {'NAME': 'Weblogic Console', 'CVE': None, 'TYPE': PLUGIN_TYPE.MODULE}
-
-    def __init__(self):
-        self.cli = http_client.new(headers={'User-Agent': USER_AGENT_LIST[random.randint(0, len(USER_AGENT_LIST) - 1)]})
-
-    def http_or_https(self, host, port):
-        err, response = self.cli.r_super('https://{}:{}/'.format(host, port), 'HEAD', verify=False)
-        if not err:
-            return 'https'
-        err, response = self.cli.r_super(
-            'http://{}:{}/'.format(host, port), 'HEAD', verify=False, allow_redirects=False
-        )
-        if not err:
-            if 'Location' in response.headers:
-                obj_url = url.Url(response.headers['Location'])
-                if obj_url.host == host and obj_url.port == port:
-                    return obj_url.scheme
-            return 'http'
-        return None
-
-    def is_exists(self, url: url.Url) -> Tuple[bool, Dict]:
-        scheme = url.scheme if not url.scheme else self.http_or_https(url.host, url.port)
-        path = url.path if url.path else '/console/login/LoginForm.jsp'
-
-        err, response = self.cli.r_super('{}://{}:{}/{}'.format(scheme, url.host, url.port, path))
-        if err:
-            return False, {'msg': err}
-        if response.status_code == 200:
-            return True, {'data': response.url, 'msg': 'success'}
-        return False, {'msg': response}
-
-    def run(self, url: url.Url) -> Tuple[bool, Dict]:
-        ret = {
-            'scheme': url.scheme,
-            'host': url.host,
-            'port': url.port,
-            'name': self.info['CVE'] if self.info['CVE'] else self.info['NAME'],
-        }
-        ret['is_exists'], ret['data'] = self.is_exists(url)
-        return ret
-
-
-if __name__ == '__main__':
-    plugin = Plugin()
-    print(10001, plugin.http_or_https('cn.aliyun.com', 80))
