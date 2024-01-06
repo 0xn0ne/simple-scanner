@@ -162,3 +162,5 @@ cython_debug/
 # other
 utils/*.yml
 plugins/utils
+*.csv
+*.json

@@ -6,12 +6,8 @@
 
 import http.cookiejar
 import logging
-import os
-import pathlib
 import re
 import time
-
-import sys
 from typing import Any, Dict, List, Tuple, Union
 
 import requests
@@ -28,38 +24,15 @@ def cookie_str2dict(cookies: str) -> Dict:
     return ret
 
 
-if sys.platform == 'win32':
-    HOME_PATH = pathlib.Path(os.environ['USERPROFILE'])
-elif sys.platform == 'linux' or sys.platform == 'darwin':
-    HOME_PATH = pathlib.Path(os.environ['HOME'])
-else:
-    HOME_PATH = pathlib.Path(os.environ['USERPROFILE'])
-
-DEF_COO_PATH = {
-    'win32': [
-        HOME_PATH.joinpath('AppData/Local/Google/Chrome/User Data')
-    ],
-    'linux': [
-        HOME_PATH.joinpath('Library/Application Support/Google/Chrome'),
-    ],
-    'darwin': [
-        HOME_PATH.joinpath('Library/Application Support/Google/Chrome'),
-    ],
-    'cygwin': [
-        HOME_PATH.joinpath('AppData/Local/Google/Chrome/User Data'),
-    ],
-}
-
-
 class HttpClient(requests.Session):
     log: logging.Logger
     headers: Dict
 
     def __init__(
-            self,
-            headers: Dict = None,
-            tries: int = 5,
-            timeout: float = None,
+        self,
+        headers: Dict = None,
+        tries: int = 5,
+        timeout: float = None,
     ) -> None:
         super(HttpClient, self).__init__()
         self.timeout = timeout
@@ -69,7 +42,7 @@ class HttpClient(requests.Session):
             self.headers.update(
                 {
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, '
-                                  'like Gecko) Chrome/96.0.4664.55 Safari/537.36',
+                    'like Gecko) Chrome/96.0.4664.55 Safari/537.36',
                     'Referer': 'https://www.google.com',
                 }
             )
@@ -84,25 +57,24 @@ class HttpClient(requests.Session):
 
         self.prepare_request = prepare_request
 
-    def before_request(
-            self, request: requests.Request
-    ) -> Union[requests.Request, requests.PreparedRequest]:
+    def before_request(self, request: requests.Request) -> Union[requests.Request, requests.PreparedRequest]:
         return request
 
     @staticmethod
-    def after_request(err: Union[Exception, Any], response: Union[requests.Response, Any]) -> Tuple[
-        Union[Exception, Any], Union[requests.Response, Any]]:
+    def after_request(
+        err: Union[Exception, Any], response: Union[requests.Response, Any]
+    ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
         return err, response
 
     def try_request(
-            self,
-            request: requests.Request,
-            timeout=None,
-            allow_redirects=True,
-            proxies=None,
-            stream=None,
-            verify=None,
-            cert=None,
+        self,
+        request: requests.Request,
+        timeout=None,
+        allow_redirects=True,
+        proxies=None,
+        stream=None,
+        verify=None,
+        cert=None,
     ) -> requests.Response:
         prep = self.prepare_request(request)
 
@@ -110,31 +82,27 @@ class HttpClient(requests.Session):
             "timeout": timeout,
             "allow_redirects": allow_redirects,
         }
-        send_kwargs.update(
-            self.merge_environment_settings(
-                prep.url, proxies or {}, stream, verify, cert
-            )
-        )
+        send_kwargs.update(self.merge_environment_settings(prep.url, proxies or {}, stream, verify, cert))
 
         # Send the request.
         return self.send(prep, **send_kwargs)
 
     def r_super(
-            self,
-            url: str,
-            method: str = 'GET',
-            data: Dict = None,
-            json: Dict = None,
-            params: Dict = None,
-            headers: Dict = None,
-            cookies: Dict = None,
-            timeout: float = None,
-            allow_redirects: bool = True,
-            hooks: List = None,
-            files=None,
-            auth=None,
-            *args,
-            **kwargs
+        self,
+        url: str,
+        method: str = 'GET',
+        data: Dict = None,
+        json: Dict = None,
+        params: Dict = None,
+        headers: Dict = None,
+        cookies: Dict = None,
+        timeout: float = None,
+        allow_redirects: bool = True,
+        hooks: List = None,
+        files=None,
+        auth=None,
+        *args,
+        **kwargs
     ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
         try:
             res = self.request(
@@ -157,8 +125,9 @@ class HttpClient(requests.Session):
         except requests.exceptions.RequestException as error:
             return self.after_request(error, None)
 
-    def retry(self, response: requests.Response, timeout: float = None, allow_redirects: bool = True) -> Tuple[
-        Union[Exception, Any], Union[requests.Response, Any]]:
+    def retry(
+        self, response: requests.Response, timeout: float = None, allow_redirects: bool = True
+    ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
         kwargs = {
             'method': response.request.method,
             'url': response.request.url,
@@ -174,9 +143,9 @@ class HttpClient(requests.Session):
             return self.after_request(error, None)
 
     def set_cookies(
-            self,
-            cookies: Union[str, List, Dict, http.cookiejar.CookieJar],
-            domain: str = '*',
+        self,
+        cookies: Union[str, List, Dict, http.cookiejar.CookieJar],
+        domain: str = '*',
     ):
         if isinstance(cookies, Dict):
             for key in cookies:
@@ -214,16 +183,15 @@ class HttpClient(requests.Session):
 
 
 def new(
-        headers: Dict = None,
-        tries: int = 5,
-        timeout: float = None,
+    headers: Dict = None,
+    tries: int = 5,
+    timeout: float = None,
 ):
     return HttpClient(headers, tries, timeout)
 
 
 if __name__ == '__main__':
     cli = new()
-
 
     # err, ret = cli.r_super(
     #     'https://why-are-there-so-many-domian-name-in-the-world.com/'
@@ -245,7 +213,7 @@ if __name__ == '__main__':
     # print(cli.get_cookie_by_browser(browser='chrome'))
 
     def after_request(
-            error: Exception, response: requests.Response
+        error: Exception, response: requests.Response
     ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
         if error:
             return error, response
@@ -256,7 +224,6 @@ if __name__ == '__main__':
         if 'json' not in response.headers['content-type']:
             return ValueError(response.text), response
         return error, response.json()
-
 
     cli.after_request = after_request
 

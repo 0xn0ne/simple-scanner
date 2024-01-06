@@ -53,12 +53,35 @@ class ProgressBar:
     def print(self, msg: str, *args, **kwargs):
         self.msg_list.append(msg)
 
-    def iter(self, its: Iterable, *args, **kwargs):
-        for it in tqdm.tqdm(its, total=number, position=0):
+    def iter(
+        self,
+        its: Iterable,
+        total: int = None,
+        position: int = 0,
+        format: str = None,
+        mininterval: int = 1,
+        ncols: int = 80,
+        *args,
+        **kwargs
+    ):
+        for it in tqdm.tqdm(
+            its,
+            total=total,
+            bar_format=format or self.format,
+            mininterval=mininterval or self.mininterval,
+            ncols=ncols or self.ncols,
+            position=position,
+            *args,
+            **kwargs
+        ):
             yield it
             while self.msg_list:
                 with redirect_stdout():
                     print(self.msg_list.pop(0))
+
+
+def new(*args, **kwargs):
+    return ProgressBar(*args, **kwargs)
 
 
 if __name__ == '__main__':

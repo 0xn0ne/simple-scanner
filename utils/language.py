@@ -6,7 +6,7 @@
 import json
 import locale
 import pathlib
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
 import toml
 import yaml
@@ -16,16 +16,15 @@ class Language:
     def __init__(self, path: str = 'language.yml', lang: str = None):
         self.path = pathlib.Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.lang = lang if lang else self.get_locale()
+        self.lang = lang or self.get_locale()
         self.raw = self.load()
 
     def t(self, text: str, *args_format: Tuple[Any], lang: str = None) -> str:
         if text not in self.raw:
             self.raw[text] = {}
             self.dump()
-        lang = lang if lang else self.lang
+        lang = lang or self.lang
 
-        print(10001, text, lang, self.lang)
         if lang not in self.raw[text]:
             ret = text
         else:
@@ -73,9 +72,9 @@ class Language:
 
 if __name__ == '__main__':
     '''language.yml
-hello world!:
-zh_CN: "\u4F60\u597D\u4E16\u754C\uFF01"
-let go!: {}
+    hello world!:
+    zh_CN: "\u4F60\u597D\u4E16\u754C\uFF01"
+    let go!: {}
     '''
     lang = Language('language.yml', 'zh_CN')
     lang.t('hello world!')

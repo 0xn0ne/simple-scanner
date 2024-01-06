@@ -19,7 +19,7 @@ class Plugin(plugin.PluginBase):
             'catalog': '',
             'itype': PLUGIN_TYPE.MODULE,
             'protocols': ['http', 'https'],
-            'port': '80',
+            'port': '7001',
         }
 
     def run(self, url: urlutil.Url) -> Tuple[bool, Dict]:
@@ -32,10 +32,10 @@ class Plugin(plugin.PluginBase):
 
         err, response = self.cli.r_super(url.string(), timeout=5)
         if err:
-            return False, {'msg': err}
+            return False, err
         if response.status_code == 200:
-            return True, {'data': response.url, 'msg': 'success'}
-        return False, {'msg': response}
+            return True, response.url
+        return False, response
 
 
 if __name__ == '__main__':
@@ -49,13 +49,13 @@ if __name__ == '__main__':
 
     # 3次重试机制存在，连接失败的情况会重试3次
     s_time = time.time()
-    print(plugin.do_testing('scanme.nmap.org:8080'))
-    print('total time(s):', time.time() - s_time)
-
-    s_time = time.time()
     print(plugin.do_testing('https://scanme.nmap.org'))
     print('total time(s):', time.time() - s_time)
 
     s_time = time.time()
-    print(plugin.do_testing('https://scanme.nmap.org/admin/login/LoginForm.jsp'))
+    print(plugin.do_testing('192.168.245.128'))
+    print('total time(s):', time.time() - s_time)
+
+    s_time = time.time()
+    print(plugin.do_testing('http://192.168.245.128/admin/login/LoginForm.jsp'))
     print('total time(s):', time.time() - s_time)

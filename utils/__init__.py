@@ -1,8 +1,9 @@
-from utils import language
+from utils import language, state
 
 
-class PluginType:
-    POC = 40
+class PluginType(state.StateBase):
+    EXP = 100
+    POC = 80
     MODULE = 20
 
 
