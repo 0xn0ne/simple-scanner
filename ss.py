@@ -100,7 +100,10 @@ if __name__ == '__main__':
             plugin_list.append(plugin)
             continue
         for match in args.module:
-            if fnmatch.fnmatch(plugin.info.name, match) or fnmatch.fnmatch(plugin.info.catalog, match):
+            match = match.lower().replace('-', '_')
+            plugin_name = plugin.info.name.lower().replace('-', '_')
+            catalog = plugin.info.catalog.lower().replace('-', '_')
+            if fnmatch.fnmatch(plugin_name, match) or fnmatch.fnmatch(catalog, match):
                 plugin_list.append(plugin)
     if not plugin_list:
         print(LANG.t('[!] plugin list is empty, exit.'))
