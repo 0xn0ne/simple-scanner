@@ -172,7 +172,6 @@ class DnslogOrg(EchoServiceBase):
             if err:
                 continue
             j_response = response.json()
-            print(10002, j_response)
             if not response.json():
                 continue
 
