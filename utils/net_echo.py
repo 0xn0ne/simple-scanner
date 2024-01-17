@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import re
 import socket
 import threading
@@ -171,6 +172,7 @@ class DnslogOrg(EchoServiceBase):
             if err:
                 continue
             j_response = response.json()
+            print(10002, j_response)
             if not response.json():
                 continue
 
@@ -194,8 +196,75 @@ class DnslogOrg(EchoServiceBase):
         return False
 
 
-class NetEcho:
-    pass
+class DnslogCn(EchoServiceBase):
+    def __init__(self) -> None:
+        super(DnslogCn, self).__init__()
+        self.domains_able = ['dnslog.cn']
+        self.domain = ''
+        self.netloc = ''
+
+    def start_service(self):
+        index_last = len(self.domains_able) - 1
+        for index, domain in enumerate(self.domains_able):
+            params = {'t': random.random()}
+            err, response = self.cli.r_super('http://dnslog.cn/getdomain.php?t=0.27484175904205843', params=params)
+            if err:
+                if index == index_last:
+                    raise ConnectionError(err.__str__())
+                continue
+            self.netloc = response.text
+            self.domain = domain
+            break
+
+    def get_results(self, random_id: str, timeout: float = 30) -> List[Dict]:
+        s_time = time.time()
+        ret = []
+        while time.time() - s_time < timeout:
+            params = {'t': random.random()}
+            err, response = self.cli.r_super('http://dnslog.cn/getrecords.php', params=params)
+            if err:
+                continue
+            j_response = response.json()
+            if not response.json():
+                continue
+
+            for it in j_response:
+                if random_id in it[0]:
+                    ret.append(
+                        {
+                            'from': it[1],
+                            'info': it[0],
+                            'time': time.mktime(time.strptime(it[2], '%Y-%m-%d %H:%M:%S')),
+                        }
+                    )
+            if ret:
+                return ret
+            time.sleep(1)
+        return []
+
+    def is_found(self, random_id: str, timeout: float = 30) -> bool:
+        if self.get_results(random_id, timeout):
+            return True
+        return False
+
+
+class CeyeIo(EchoServiceBase):
+    def __init__(self) -> None:
+        super(DnslogCn, self).__init__()
+        self.domains_able = ['dnslog.cn']
+        self.domain = ''
+        self.netloc = ''
+
+    def start_service(self):
+        pass
+
+    def get_results(self, random_id: str, timeout: float = 30) -> List[Dict]:
+        pass
+
+    def is_found(self, random_id: str, timeout: float = 30) -> bool:
+        if self.get_results(random_id, timeout):
+            return True
+        return False
 
 
 if __name__ == '__main__':
@@ -210,13 +279,24 @@ if __name__ == '__main__':
     # print(nc.get_results(info['random_id']))
     # print(nc.is_found(info['random_id']))
 
-    nc = LocalSocket('127.0.0.1')
+    # nc = LocalSocket('127.0.0.1')
+    # nc.start_service()
+    # info = nc.get_random_id()
+    # print(info)
+    # cli = http_client.new().r_super('http://{}'.format(info['netloc']))
+    # print(nc.get_results(info['random_id']))
+    # print(nc.is_found(info['random_id']))
+    # cli = http_client.new().r_super('http://{}/random-id-{}'.format(info['netloc'], info['random_id']))
+    # print(nc.get_results(info['random_id']))
+    # print(nc.is_found(info['random_id']))
+
+    nc = DnslogCn()
     nc.start_service()
     info = nc.get_random_id()
     print(info)
     cli = http_client.new().r_super('http://{}'.format(info['netloc']))
-    print(nc.get_results(info['random_id']))
-    print(nc.is_found(info['random_id']))
-    cli = http_client.new().r_super('http://{}/random-id-{}'.format(info['netloc'], info['random_id']))
+    print(nc.get_results(info['random_id'], timeout=5))
+    print(nc.is_found(info['random_id'], timeout=5))
+    cli = http_client.new().r_super('http://{}.{}'.format(info['random_id'], info['netloc']))
     print(nc.get_results(info['random_id']))
     print(nc.is_found(info['random_id']))

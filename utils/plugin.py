@@ -89,6 +89,12 @@ class PluginBase:
 
         return ret
 
+    def make_http_echo():
+        pass
+
+    def make_dns_echo():
+        pass
+
     def make_url(self, url: str) -> Union[urlutil.Url, Any]:
         new_url = urlutil.new()
         new_url.from_str(url, False)
