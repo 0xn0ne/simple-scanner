@@ -1,47 +1,46 @@
-from typing import Dict, Tuple
+import pathlib
+import sys
+from typing import Any, Tuple
 
 try:
     from utils import PLUGIN_TYPE, plugin, urlutil
 except:
-    import pathlib
-    import sys
-
     sys.path.append(pathlib.Path(__file__).parent.parent.__str__())
     from utils import PLUGIN_TYPE, plugin, urlutil
 
 
 class Plugin(plugin.PluginBase):
-    info = {'NAME': 'Weblogic Console', 'CVE': None, 'TYPE': PLUGIN_TYPE.MODULE}
-
     def set_info(self):
         return {
             'name': 'Weblogic Console Login Page',
-            'catalog': '',
+            'catalog': None,
             'itype': PLUGIN_TYPE.MODULE,
             'protocols': ['http', 'https'],
             'port': '7001',
         }
 
-    def run(self, url: urlutil.Url) -> Tuple[bool, Dict]:
+    def run(self, url: urlutil.Url, *args, **kwargs) -> Tuple[bool, Any]:
         url.protocol = url.protocol or self.http_or_https(url)
         if not url.protocol:
-            return False, {'msg': response}
+            return False, 'the network protocol does not match.'
         path = url.path if url.path and url.path != '/' else '/console/login/LoginForm.jsp'
 
         url = url.join(path)
 
-        err, response = self.cli.r_super(url.string(), timeout=5)
+        err, response = self.http.rq(url.string(), timeout=5)
         if err:
             return False, err
-        if response.status_code == 200:
-            return True, response.url
-        return False, response
+        return response.status_code == 200, response.status_code
 
 
 if __name__ == '__main__':
     import time
 
-    plugin = Plugin()
+    from utils import net_echo
+
+    nc = net_echo.DnslogCn()
+    nc.start_service()
+    plugin = Plugin(nc)
 
     s_time = time.time()
     print(plugin.do_testing('scanme.nmap.org'))

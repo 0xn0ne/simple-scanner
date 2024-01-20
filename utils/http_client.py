@@ -25,27 +25,22 @@ def cookie_str2dict(cookies: str) -> Dict:
 
 
 class HttpClient(requests.Session):
-    log: logging.Logger
-    headers: Dict
-
     def __init__(
         self,
         headers: Dict = None,
         tries: int = 5,
-        timeout: float = None,
+        timeout: float = 120,
     ) -> None:
         super(HttpClient, self).__init__()
+        # timeout 必须赋值否则在多线程场景下 None 值的属性会被删除
         self.timeout = timeout
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, '
+            'like Gecko) Chrome/96.0.4664.55 Safari/537.36',
+            'Referer': 'https://www.google.com',
+        }
         if headers:
             self.headers.update(headers)
-        else:
-            self.headers.update(
-                {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, '
-                    'like Gecko) Chrome/96.0.4664.55 Safari/537.36',
-                    'Referer': 'https://www.google.com',
-                }
-            )
         self.mount('http://', requests.adapters.HTTPAdapter(max_retries=tries))
         self.mount('https://', requests.adapters.HTTPAdapter(max_retries=tries))
 
@@ -66,28 +61,7 @@ class HttpClient(requests.Session):
     ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
         return err, response
 
-    def try_request(
-        self,
-        request: requests.Request,
-        timeout=None,
-        allow_redirects=True,
-        proxies=None,
-        stream=None,
-        verify=None,
-        cert=None,
-    ) -> requests.Response:
-        prep = self.prepare_request(request)
-
-        send_kwargs = {
-            "timeout": timeout,
-            "allow_redirects": allow_redirects,
-        }
-        send_kwargs.update(self.merge_environment_settings(prep.url, proxies or {}, stream, verify, cert))
-
-        # Send the request.
-        return self.send(prep, **send_kwargs)
-
-    def r_super(
+    def rq(
         self,
         url: str,
         method: str = 'GET',
@@ -124,6 +98,27 @@ class HttpClient(requests.Session):
             return self.after_request(None, res)
         except requests.exceptions.RequestException as error:
             return self.after_request(error, None)
+
+    # def try_rq(
+    #     self,
+    #     request: requests.Request,
+    #     timeout=None,
+    #     allow_redirects=True,
+    #     proxies=None,
+    #     stream=None,
+    #     verify=None,
+    #     cert=None,
+    # ) -> requests.Response:
+    #     prep = self.prepare_request(request)
+
+    #     send_kwargs = {
+    #         "timeout": timeout,
+    #         "allow_redirects": allow_redirects,
+    #     }
+    #     send_kwargs.update(self.merge_environment_settings(prep.url, proxies or {}, stream, verify, cert))
+
+    #     # Send the request.
+    #     return self.send(prep, **send_kwargs)
 
     def retry(
         self, response: requests.Response, timeout: float = None, allow_redirects: bool = True
@@ -193,7 +188,7 @@ def new(
 if __name__ == '__main__':
     cli = new()
 
-    # err, ret = cli.r_super(
+    # err, ret = cli.rq(
     #     'https://why-are-there-so-many-domian-name-in-the-world.com/'
     # )
     # print(err, ret)
@@ -227,9 +222,9 @@ if __name__ == '__main__':
 
     cli.after_request = after_request
 
-    err, ret = cli.r_super('https://httpbin.org/get')
+    err, ret = cli.rq('https://httpbin.org/get')
     print(err.__str__(), ret)
-    err, ret = cli.r_super('https://httpbin.org/status/304')
+    err, ret = cli.rq('https://httpbin.org/status/304')
     if err:
         print('error:', err.__str__())
     print(err.__str__(), ret.status_code, ret.text)
@@ -247,6 +242,6 @@ if __name__ == '__main__':
 
     s_time = time.time()
     for i in range(10):
-        err, ret = cli.r_super('https://httpbin.org/get')
+        err, ret = cli.rq('https://httpbin.org/get')
     print('r_super, total time(s):', time.time() - s_time)
     # r_super, total time(s): 4.034818649291992

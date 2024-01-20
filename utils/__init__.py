@@ -1,4 +1,4 @@
-from utils import language, state
+from utils import language, net_echo, state
 
 
 class PluginType(state.StateBase):
@@ -44,3 +44,5 @@ USER_AGENT_LIST = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
     'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
 ]
+
+NET_ECHO: net_echo.EchoServiceBase = None

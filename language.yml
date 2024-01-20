@@ -1,7 +1,14 @@
 "[!] plugin list is empty, exit.":
-  zh_CN: "[!] \u672a\u627e\u5230\u53ef\u7528\u63d2\u4ef6\uff0c\u7a0b\u5e8f\u9000\u51fa"
-"[+] {}, url: {}, info: {}":
-  zh_CN: "[+] {} url: {}, \u4FE1\u606F: {}"
+  zh_CN: "[!] \u672A\u627E\u5230\u53EF\u7528\u63D2\u4EF6\uFF0C\u7A0B\u5E8F\u9000\u51FA"
+"[+] {}, {}, url: {}, info: {}":
+  zh_CN: "[+] {}，{}，URL: {}，\u4FE1\u606F：{}"
+? "network reflection mode used, available dnslogorg, dnslogcn, localsocket. default
+  dnslogorg. !!!note: there is a difference between tcp reflection and dns reflection
+  detection logic, and you need to pay attention to what type of reflection tool the
+  target POC is using when using it."
+: {
+    zh_CN: "使用的网络反射模式，可用 dnslogorg, dnslogcn, localsocket；默认为 dnslogorg。注意：TCP 的反射和 DNS 的反射检测逻辑有区别，使用时需要关注 POC 是使用的什么类型反射工具。",
+  }
 number of program processes, default 5 processes.:
   zh_CN: "\u8C03\u7528\u8FDB\u7A0B\u6570\uFF0C\u9ED8\u8BA4 5 \u4E2A\u8FDB\u7A0B"
 output file format, available formats json, csv. default csv format.:
@@ -20,6 +27,8 @@ the "name" and "catalog" of the plugin are empty, one of them must be set.:
   zh_CN:
     "\u63D2\u4EF6\u7684 \"name\" \u548C \"catalog\" \u4E3A\u7A7A\uFF0C\u5FC5\u987B\
     \u8BBE\u7F6E\u5176\u4E2D\u4E00\u4E2A"
+? 'the "protocol" information for plugins with name "{}" and catalog "{}" is empty, you must set the list of network protocols used by the plugin.'
+: zh_CN: '名字为 "{}" 编号为 "{}" 的插件 "protocol" 信息为空，必须设置插件使用的网络协议列表。'
 the "protocol" of the plugin are empty, one of them must be set.:
   zh_CN:
     "\u63D2\u4EF6\u7684 \"protocol\" \u4E3A\u7A7A\uFF0C\u5FC5\u987B\u8BBE\u7F6E\
@@ -32,5 +41,5 @@ vulnerability plugins name used, default scan all modules (e.g. "CVE-2014-*").:
   default is not to use the redirected link.
 : zh_CN:
     "\u5982\u679C\u78B0\u5230\u91CD\u5B9A\u5411\u662F\u5426\u81EA\u52A8\u4F7F\
-    \    \u7528\u91CD\u5B9A\u5411\u540E\u7684\u94FE\u63A5\uFF0C\u9ED8\u8BA4\u4E0D\u4F7F\
+    \u7528\u91CD\u5B9A\u5411\u540E\u7684\u94FE\u63A5\uFF0C\u9ED8\u8BA4\u4E0D\u4F7F\
     \u7528\u91CD\u5B9A\u5411\u94FE\u63A5"

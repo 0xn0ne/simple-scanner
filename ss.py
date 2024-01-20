@@ -7,7 +7,7 @@ import time
 
 import pandas
 
-from utils import LANG, process, progress_bar
+from utils import LANG, NET_ECHO, net_echo, process, progress_bar
 
 PATH_CACHE = 'cache'
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     ╚════██║██║██║╚██╔╝██║██╔═══╝ ██║     ██╔══╝      ╚════██║
     ███████║██║██║ ╚═╝ ██║██║     ███████╗███████╗    ███████║
     ╚══════╝╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝╚══════╝    ╚══════╝
-    v0.2.1
+    v0.2.2
     by 0xn0ne, https://github.com/0xn0ne/simple-scanner
 ''',
     )
@@ -47,18 +47,17 @@ if __name__ == '__main__':
     parser.add_argument(
         '-o',
         '--output-format',
-        required=False,
         type=str,
         help=LANG.t('output file format, available formats json, csv. default csv format.'),
     )
-    # parser.add_argument(
-    #     '-r',
-    #     '--is-redirect',
-    #     action='store_true',
-    #     help=LANG.t(
-    #         'whether to automatically use the redirected link if it encounters a redirect, the default is not to use the redirected link.'
-    #     ),
-    # )
+    parser.add_argument(
+        '-e',
+        '--net-echo',
+        type=str,
+        help=LANG.t(
+            'network reflection mode used, available dnslogorg, dnslogcn, localsocket. default dnslogorg. !!!note: there is a difference between tcp reflection and dns reflection detection logic, and you need to pay attention to what type of reflection tool the target POC is using when using it.'
+        ),
+    )
     parser.add_argument(
         '-s',
         '--is-silent',
@@ -69,9 +68,18 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-
+    print('[*] initializing...')
     s_time = time.time()
     path_output = pathlib.Path(__file__).parent.joinpath(PATH_CACHE).mkdir(exist_ok=True, parents=True)
+
+    # 网络反射工具预加载
+    if args.net_echo == 'dnslogcn':
+        NET_ECHO = net_echo.DnslogCn()
+    elif args.net_echo == 'localsocket':
+        NET_ECHO = net_echo.LocalSocket()
+    else:
+        NET_ECHO = net_echo.DnslogOrg()
+    NET_ECHO.start_service()
 
     # 目标解析
     target_list = []
@@ -95,14 +103,14 @@ if __name__ == '__main__':
         module = importlib.import_module('.{}'.format(module_name), 'plugins')
         if 'Plugin' not in module.__dir__():
             continue
-        plugin = module.Plugin()
+        plugin = module.Plugin(NET_ECHO)
         if not args.module:
             plugin_list.append(plugin)
             continue
         for match in args.module:
             match = match.lower().replace('-', '_')
-            plugin_name = plugin.info.name.lower().replace('-', '_')
-            catalog = plugin.info.catalog.lower().replace('-', '_')
+            plugin_name = plugin.info.name.lower().replace('-', '_') if plugin.info.name else ''
+            catalog = plugin.info.catalog.lower().replace('-', '_') if plugin.info.catalog else ''
             if fnmatch.fnmatch(plugin_name, match) or fnmatch.fnmatch(catalog, match):
                 plugin_list.append(plugin)
     if not plugin_list:
@@ -116,24 +124,28 @@ if __name__ == '__main__':
 
     ret = []
     probar = progress_bar.new()
+    print('[*] scanning...')
     for result in probar.iter(pool.result_yield(), total=len(target_list) * len(plugin_list)):
         with progress_bar.redirect_stdout():
             if result['is_exists']:
                 print(
                     LANG.t(
-                        '[+] {}, url: {}, info: {}',
-                        result['plugin_name'],
+                        '[+] {}, {}, url: {}, info: {}',
+                        result['catalog'],
+                        result['name'],
                         result['url'],
                         result['data'],
                     )
                 )
             ret.append(result)
 
-    filename = 'results.csv'
+    filename = 'results-{}'.format(time.strftime("%m%d.%H%M", time.localtime()))
     if args.output_format == 'json':
-        filename = 'results.json'
-        with open(filename, 'w', encoding='utf-8') as _f:
+        out_path = pathlib.Path(filename + '.json')
+        with open(out_path, 'w', encoding='utf-8') as _f:
             _f.write(json.dumps(ret))
     else:
+        out_path = pathlib.Path(filename + '.csv')
         dataframe = pandas.DataFrame(ret)
-        dataframe.to_csv(filename, quoting=csv.QUOTE_MINIMAL)
+        dataframe.to_csv(out_path, quoting=csv.QUOTE_MINIMAL)
+    print('[*] output:', out_path.absolute().__str__())

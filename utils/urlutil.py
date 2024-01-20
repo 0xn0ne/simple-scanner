@@ -77,7 +77,7 @@ class Url:
         self = self.from_str(url, is_verify=False)
 
     @property
-    def port2int(self):
+    def i_port(self):
         return int(self.port)
 
     @property
