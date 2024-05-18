@@ -1,5 +1,6 @@
 import random
 import time
+import traceback
 from typing import Any, Dict, List, Tuple, Union
 
 try:
@@ -29,7 +30,7 @@ class Info:
 
 
 class PluginBase:
-    def __init__(self, echo: net_echo.EchoServiceBase):
+    def __init__(self, echo: net_echo.EchoServiceBase = None):
         self.info = Info(**self.set_info())
         if not self.info.name and not self.info.catalog:
             raise ValueError(LANG.t('the "name" and "catalog" of the plugin are empty, one of them must be set.'))
@@ -87,26 +88,31 @@ class PluginBase:
             tries=3, headers={'User-Agent': USER_AGENT_LIST[random.randint(0, len(USER_AGENT_LIST) - 1)]}
         )
         self.tcp = self.cli_mng.new_tcp(o_url.host, o_url.i_port)
-        ret['is_exists'], ret['data'] = self.run(o_url, **data)
+        try:
+            ret['is_exists'], ret['data'] = self.run(o_url, **data)
+            if self.tcp.is_connect():
+                self.tcp.close()
+        except Exception as e:
+            ret['is_exists'], ret['data'] = False, traceback.format_exc()
         ret.update({'protocol': o_url.protocol, 'host': o_url.host, 'port': o_url.port, 'url': o_url.string()})
-        if self.tcp.is_connect():
-            self.tcp.close()
         return ret
 
     def make_tcp_echo(self, pre_id: str = ''):
         """
         如果使用 TCP 的反射功能，不能像 DNS 反射一样直接把 rid 加在返回的域名前后，因为网络无法识别这类地址无法反射，只能放在如 http 的 path、header、body 中
         """
-        if self.echo._type.lower() != 'http' and self.echo._type.lower() != 'tcp':
-            return None
+        if not self.echo or self.echo._type.lower() != 'http' and self.echo._type.lower() != 'tcp':
+            raise ModuleNotFoundError('requires http or tcp type reflection.')
         return self.echo.get_random_id(pre_id)
 
     def make_dns_echo(self, pre_id: str = ''):
-        if self.echo._type.lower() != 'dns':
-            return None
+        if not self.echo or self.echo._type.lower() != 'dns' and self.echo._type.lower() != 'tcp':
+            raise ModuleNotFoundError('requires dns type reflection.')
         return self.echo.get_random_id(pre_id)
 
     def get_results(self, random_id: str):
+        if not self.echo:
+            raise ModuleNotFoundError('requires network echo.')
         return self.echo.get_results(random_id)
 
     def make_url(self, url: str) -> Union[urlutil.Url, Any]:

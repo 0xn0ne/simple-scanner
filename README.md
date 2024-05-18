@@ -36,3 +36,11 @@ $ python3 ss.py -t 192.168.245.128
 [+] Weblogic Console Login Page url: http://192.168.245.128:7001/, 信息: http://192.168.245.128:7001/console/login/LoginForm.jsp
 3/3 [████████████████████████████████████████████████████] 00:02<00:00, 1.23it/s
 ```
+
+## CHANGE LOG
+
+### 0.2.3 2024/05/18
+
++ 默认禁用DNSLOG功能；
++ 增加requirements.txt方便部署；
++ 优化返回数据，尽可能多保留数据到CSV。

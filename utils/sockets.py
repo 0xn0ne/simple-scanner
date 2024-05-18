@@ -231,4 +231,4 @@ if __name__ == '__main__':
     sm = ClientManager()
     sk = sm.new_tcp('192.168.245.128', 7001)
     sk.connect()
-    print(10001, sk.rq(b't3 9.2.0.0\nAS:255\nHL:92\nMS:10000000\nPU:t3://127.0.0.1:7001\n\n'))
+    print('DEBUG', sk.rq(b't3 9.2.0.0\nAS:255\nHL:92\nMS:10000000\nPU:t3://127.0.0.1:7001\n\n'))

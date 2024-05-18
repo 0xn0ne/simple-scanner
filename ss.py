@@ -23,7 +23,7 @@ if __name__ == '__main__':
     ╚════██║██║██║╚██╔╝██║██╔═══╝ ██║     ██╔══╝      ╚════██║
     ███████║██║██║ ╚═╝ ██║██║     ███████╗███████╗    ███████║
     ╚══════╝╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝╚══════╝    ╚══════╝
-    v0.2.2
+    v0.2.3
     by 0xn0ne, https://github.com/0xn0ne/simple-scanner
 ''',
     )
@@ -75,11 +75,15 @@ if __name__ == '__main__':
     # 网络反射工具预加载
     if args.net_echo == 'dnslogcn':
         NET_ECHO = net_echo.DnslogCn()
+    elif args.net_echo == 'dnslogorg':
+        NET_ECHO = net_echo.DnslogOrg()
     elif args.net_echo == 'localsocket':
         NET_ECHO = net_echo.LocalSocket()
     else:
-        NET_ECHO = net_echo.DnslogOrg()
-    NET_ECHO.start_service()
+        NET_ECHO = None
+
+    if NET_ECHO:
+        NET_ECHO.start_service()
 
     # 目标解析
     target_list = []
@@ -134,7 +138,7 @@ if __name__ == '__main__':
                         result['catalog'],
                         result['name'],
                         result['url'],
-                        result['data'],
+                        result['data'].__str__().strip().split('\n')[0],
                     )
                 )
             ret.append(result)

@@ -33,7 +33,9 @@ class Plugin(plugin.PluginBase):
         """
         需要重写的函数，程序会自动调用 Plugin.run(url) 函数运行，接收的参数一定要带 *args, **kwargs，因为配置文件的数据会导入到插件中
         """
-        url.protocol = url.protocol or self.http_or_https(url)  # 检测 protocol 如果不存在自动检测目标是 http 或 https 协议
+        url.protocol = url.protocol or self.http_or_https(
+            url
+        )  # 检测 protocol 如果不存在自动检测目标是 http 或 https 协议
         if not url.protocol:  # 检测和自动检测都找不到可用协议
             return False, 'the network protocol does not match.'
         path = (
