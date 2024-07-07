@@ -121,7 +121,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*
 env/
 venv/
 ENV/
@@ -164,3 +164,4 @@ utils/*.yml
 plugins/utils
 *.csv
 *.json
+*.txt

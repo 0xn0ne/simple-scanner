@@ -7,6 +7,7 @@
 import http.cookiejar
 import logging
 import re
+import ssl
 import time
 from typing import Any, Dict, List, Tuple, Union
 
@@ -155,7 +156,7 @@ class HttpClient(requests.Session):
                 self.cookies.set(row[0], row[1])
 
     def cookies2dict(self, is_drop: bool = False) -> Dict[str, Union[List, str]]:
-        ret = {}
+        ret: Dict[str, Union[List, str]] = {}
         for key, value in self.cookies.iteritems():
             if is_drop:
                 ret[key] = value
@@ -175,6 +176,12 @@ class HttpClient(requests.Session):
 
         self.proxies.update(proxies)
         return
+
+    def is_https(self, addr, port, timeout=3, *args, **kwargs) -> Union[str, bool]:
+        try:
+            return ssl.get_server_certificate((addr, port), timeout=timeout, *args, **kwargs)
+        except ssl.SSLError:
+            return False
 
 
 def new(

@@ -27,7 +27,7 @@ class Plugin(plugin.PluginBase):
 
         url = url.join(path)
 
-        err, response = self.http.rq(url.string(), timeout=5)
+        err, response = self.http.rq(url.get_full(), timeout=5)
         if err:
             return False, err
         return response.status_code == 200, response.status_code

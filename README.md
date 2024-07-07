@@ -1,5 +1,9 @@
 # Simple Scanner
 
+## 依赖
+
+- Python 3.11+ 64bit
+
 原扫描器：<https://github.com/0xn0ne/weblogicScanner>
 
 Simple Scanner，尽可能简单化的扫描，搭载 DNS 反射功能。
@@ -41,6 +45,6 @@ $ python3 ss.py -t 192.168.245.128
 
 ### 0.2.3 2024/05/18
 
-+ 默认禁用DNSLOG功能；
-+ 增加requirements.txt方便部署；
-+ 优化返回数据，尽可能多保留数据到CSV。
+- 默认禁用DNSLOG功能；
+- 增加requirements.txt方便部署；
+- 优化返回数据，尽可能多保留数据到CSV。

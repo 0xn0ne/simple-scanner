@@ -7,43 +7,43 @@
 
 import pathlib
 import re
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Self
 from urllib.parse import quote
 
-PRTCL2PORT = {
-    'ftp': '21',
-    'ssh': '22',
-    'telnet': '23',
-    'dns': '53',
-    'tftp': '69',
-    'http': '80',
-    'pop': '109',
-    'pop2': '109',
-    'pop3': '110',
-    'sftp': '115',
-    'imap': '143',
-    'snmp': '143',
-    'imap3': '220',
-    'ldap': '389',
-    'https': '443',
-    'smb': '445',
-    'syslog': '514',
-    'ldaps': '636',
-    'imaps': '993',
-    'pop3s': '995',
-    'socks4': '1080',
-    'socks5': '1080',
-    'openvpn': '1194',
-    'sqlserver': '1433',
-    'oracle': '1521',
-    'mqtt': '1883',
-    'mysql': '3306',
-    'rdp': '3389',
-    'postgresql': '5432',
-    'redis': '6379',
-    't3': '7001',
-    'ajp13': '8009',
-    'mongodb': '27017',
+PRTC2PORT = {
+    'ftp': 21,
+    'ssh': 22,
+    'telnet': 23,
+    'dns': 53,
+    'tftp': 69,
+    'http': 80,
+    'pop': 109,
+    'pop2': 109,
+    'pop3': 110,
+    'sftp': 115,
+    'imap': 143,
+    'snmp': 143,
+    'imap3': 220,
+    'ldap': 389,
+    'https': 443,
+    'smb': 445,
+    'syslog': 514,
+    'ldaps': 636,
+    'imaps': 993,
+    'pop3s': 995,
+    'socks4': 1080,
+    'socks5': 1080,
+    'openvpn': 1194,
+    'sqlserver': 1433,
+    'oracle': 1521,
+    'mqtt': 1883,
+    'mysql': 3306,
+    'rdp': 3389,
+    'postgresql': 5432,
+    'redis': 6379,
+    't3': 7001,
+    'ajp13': 8009,
+    'mongodb': 27017,
 }
 
 
@@ -54,15 +54,17 @@ class DictStr(dict):
 
 class Url:
     def __init__(self, url: str = None):
-        '''
-        :param url: 需要解析的url
-        http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1
-        URL(protocol=http, username=usr, password=pwd, netloc=eg.cc:80, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=h1)
-        '''
+        """解析URL中的信息，并创建URL对象
+        如：传入 http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1 字符串解析结果为 <__main__.Url object at 0x1af298070e0, protocol=http, username=usr, password=pwd, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=h1>
+
+        Args:
+            url (str, optional): 需要解析的URL，不传入的情况下建立空对象，默认：None
+        """
         (
             self.protocol,
             self.username,
             self.password,
+            # host和port的结合体，如eg.com:80
             self.netloc,
             self.host,
             self.port,
@@ -70,56 +72,65 @@ class Url:
             self.params,
             self.query,
             self.fragment,
-        ) = ('', '', '', '', '', '', '/', DictStr(), DictStr(), '')
+        ) = ('', '', '', '', '', 0, '/', DictStr(), DictStr(), '')
 
         if not url:
             return
-        self = self.from_str(url, is_verify=False)
+        self = self.from_string(url, is_verify=False)
 
     @property
-    def i_port(self):
-        return int(self.port)
+    def s_port(self):
+        return str(self.port)
 
     @property
     def netloc(self):
         if self.port:
-            if self.protocol and self.protocol in PRTCL2PORT and self.port == PRTCL2PORT[self.protocol]:
+            if self.protocol and self.protocol in PRTC2PORT and self.port == PRTC2PORT[self.protocol]:
                 return self.host
             return '{}:{}'.format(self.host, self.port)
         return self.host
 
     @netloc.setter
-    def netloc(self, host: str, port: str = None):
+    def netloc(self, host: str, port: int = None):
         if ':' in host:
             host_spl = host.split(':')
             self.host = host_spl[0]
-            self.port = host_spl[1]
+            self.port = int(host_spl[1])
             return
 
         self.host = host
         if port:
             self.port = port
         elif self.protocol:
-            self.port = PRTCL2PORT[self.protocol]
+            self.port = PRTC2PORT[self.protocol]
 
     @staticmethod
     def get_default_port(protocol: str):
-        return PRTCL2PORT[protocol]
+        return PRTC2PORT[protocol]
 
     @classmethod
-    def new_from_str(cls, url: str, is_verify: bool = True):
-        new_url = cls()
-        new_url.from_str(url, is_verify)
-        return new_url
+    def new_from_string(cls, url: str, is_verify: bool = True) -> Self:
+        ret = cls()
+        ret.from_string(url, is_verify)
+        return ret
 
     @classmethod
-    def new_from_dict(cls, info: Dict[str, Any], is_verify: bool = True):
-        new_url = cls()
-        new_url.from_dict(info, is_verify)
-        return new_url
+    def new_from_dict(cls, info: Dict[str, Any], is_verify: bool = True) -> Self:
+        ret = cls()
+        ret.from_dict(info, is_verify)
+        return ret
 
-    def from_str(self, url: str, is_verify: bool = True):
-        r_prtcl = re.search(r'(.+)://', url)
+    def from_string(self, url: str, is_verify: bool = True):
+        """方便内部调用，直接解析字符串并赋值到当前的URL对象中
+
+        Args:
+            url (str): URL字符串，如http://eg.com/eg.txt、socks5://eg.com:8080、ftp://usr:pwd@eg.com/
+            is_verify (bool, optional): 是否对URL验证，默认：True
+
+        Raises:
+            ValueError: 验证URL失败时抛出
+        """
+        r_prtcl = re.search(r'(.+?)://', url)
         if r_prtcl:
             self.protocol = r_prtcl.group(1)
             url = url[r_prtcl.end() :]
@@ -131,7 +142,7 @@ class Url:
             self.password = r_auth.group(2) or ''
             url = url[r_auth.end() :]
 
-        r_netloc = re.search(r'([0-9a-zA-Z][-0-9a-zA-Z]{,63}(?:\.[0-9a-zA-Z][-0-9a-zA-Z]{,63})+(?::(\d{1,5}))?)', url)
+        r_netloc = re.search(r'([\w-]{,63}(?:\.[\w-]{,63})+(?::(\d{1,5}))?)', url)
         if is_verify and not (r_prtcl or r_netloc):
             raise ValueError('incorrect url "{}", missing protocol or host.'.format(url))
 
@@ -157,6 +168,15 @@ class Url:
             self.fragment = r_fragment.group(1)
 
     def from_dict(self, info: Dict[str, Any], is_verify: bool = True):
+        """方便内部调用，直接解析字符串并赋值到当前的URL对象中
+
+        Args:
+            info (Dict[str, Any]): 记录URL信息的MAP，如{'protocol': 'http', 'protocol'}、socks5://eg.com:8080、ftp://usr:pwd@eg.com/
+            is_verify (bool, optional): 是否对URL验证，默认：True
+
+        Raises:
+            ValueError: 验证URL失败时抛出
+        """
         if is_verify and (not 'protocol' in info or not info['protocol'] or not 'host' in info or not info['host']):
             raise ValueError('incorrect url "{}", missing protocol or host.'.format(info))
         for key in info:
@@ -164,7 +184,7 @@ class Url:
                 continue
             setattr(self, key, info[key])
 
-    def origin(self):
+    def get_origin(self) -> str:
         if self.username and not self.password:
             base = '{}://{}@{}'.format(self.protocol, self.username, self.netloc)
         elif self.username and self.password:
@@ -173,16 +193,7 @@ class Url:
             base = '{}://{}'.format(self.protocol, self.netloc)
         return base
 
-    def query2str(self, is_encode=True):
-        if not self.query:
-            return ''
-        string_list = []
-        for k in self.query:
-            string_list.append(f'{k}={quote(self.query[k]) if is_encode else self.query[k]}')
-
-        return '&'.join(string_list)
-
-    def resource(self, is_encode=True):
+    def get_resource(self, is_encode=True) -> str:
         base = self.path
         if self.params:
             for k in self.params:
@@ -193,17 +204,32 @@ class Url:
             base += f'#{self.fragment}'
         return base
 
-    def string(self, is_encode: bool = True):
-        return self.origin() + self.resource(is_encode)
+    def get_full(self, is_encode: bool = True) -> str:
+        return self.get_origin() + self.get_resource(is_encode)
 
-    def join(self, join_str: str):
+    def query2str(self, is_encode=True) -> str:
+        if not self.query:
+            return ''
+        string_list = []
+        for k in self.query:
+            string_list.append(f'{k}={quote(self.query[k]) if is_encode else self.query[k]}')
+
+        return '&'.join(string_list)
+
+    def join(self, join_str: str) -> Self:
         if '://' in join_str:
-            return self.new_from_str(join_str)
+            return self.new_from_string(join_str)
         join_result = pathlib.PurePosixPath(self.path).joinpath(join_str).__str__()
-        return self.new_from_str(self.origin() + join_result)
+        return self.new_from_string(self.get_origin() + join_result)
 
-    def __str__(self):
-        return f'URL(protocol={self.protocol}, username={self.username}, password={self.password}, netloc={self.netloc}, host={self.host}, port={self.port}, path={self.path}, params={self.params}, query={self.query}, fragment={self.fragment})'
+    def __repr__(self):
+        s_attrs = ''
+        for i in self.__dict__:
+            if isinstance(i, Callable) or i.startswith('_'):
+                continue
+            s_attrs += f', {i}={getattr(self, i)}'
+        ret = '<{}.{} object at {}{}>'.format(self.__module__, type(self).__name__, hex(id(self)), s_attrs)
+        return ret
 
 
 def new(*args, **kwargs) -> Url:
@@ -212,77 +238,42 @@ def new(*args, **kwargs) -> Url:
 
 if __name__ == '__main__':
     assert (
-        Url.new_from_str('eg.cc', is_verify=False).__str__()
-        == 'URL(protocol=, username=, password=, netloc=eg.cc, host=eg.cc, port=, path=/, params={}, query={}, fragment=)'
+        'protocol=, username=, password=, host=eg.cc, port=, path=/, params={}, query={}, fragment='
+        in Url.new_from_string('eg.cc', is_verify=False).__str__()
     )
     assert (
-        Url.new_from_str('127.0.0.1', is_verify=False).__str__()
-        == 'URL(protocol=, username=, password=, netloc=127.0.0.1, host=127.0.0.1, port=, path=/, params={}, query={}, fragment=)'
+        'protocol=, username=, password=, host=127.0.0.1, port=80, path=/, params={}, query={}, fragment='
+        in Url.new_from_string('127.0.0.1:80', is_verify=False).__str__()
     )
     assert (
-        Url.new_from_str('eg.cc:80', is_verify=False).__str__()
-        == 'URL(protocol=, username=, password=, netloc=eg.cc:80, host=eg.cc, port=80, path=/, params={}, query={}, fragment=)'
+        'protocol=, username=usr, password=pwd, host=eg.cc, port=80, path=/, params={}, query={}, fragment='
+        in Url.new_from_string('usr:pwd@eg.cc:80', is_verify=False).__str__()
     )
     assert (
-        Url.new_from_str('usr:pwd@eg.cc:80', is_verify=False).__str__()
-        == 'URL(protocol=, username=usr, password=pwd, netloc=eg.cc:80, host=eg.cc, port=80, path=/, params={}, query={}, fragment=)'
-    )
-    assert (
-        Url.new_from_str('http://eg.cc:80').__str__()
-        == 'URL(protocol=http, username=, password=, netloc=eg.cc, host=eg.cc, port=80, path=/, params={}, query={}, fragment=)'
-    )
-    assert (
-        Url.new_from_str('http://usr:pwd@eg.cc:80').__str__()
-        == 'URL(protocol=http, username=usr, password=pwd, netloc=eg.cc, host=eg.cc, port=80, path=/, params={}, query={}, fragment=)'
-    )
-    assert (
-        Url.new_from_str('http://usr@eg.cc:80').__str__()
-        == 'URL(protocol=http, username=usr, password=, netloc=eg.cc, host=eg.cc, port=80, path=/, params={}, query={}, fragment=)'
-    )
-    assert (
-        Url.new_from_str('http://usr:pwd@eg.cc:80').__str__()
-        == 'URL(protocol=http, username=usr, password=pwd, netloc=eg.cc, host=eg.cc, port=80, path=/, params={}, query={}, fragment=)'
-    )
-    assert (
-        Url.new_from_str('http://usr:pwd@eg.cc/id.txt').__str__()
-        == 'URL(protocol=http, username=usr, password=pwd, netloc=eg.cc, host=eg.cc, port=80, path=/id.txt, params={}, query={}, fragment=)'
-    )
-    assert (
-        Url.new_from_str('http://usr:pwd@eg.cc/id.txt;p1=6;p2=3').__str__()
-        == "URL(protocol=http, username=usr, password=pwd, netloc=eg.cc, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={}, fragment=)"
-    )
-    assert (
-        Url.new_from_str('http://eg.cc/id.txt?q1=&q2=3&q3=6').__str__()
-        == "URL(protocol=http, username=, password=, netloc=eg.cc, host=eg.cc, port=80, path=/id.txt, params={}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=)"
-    )
-    assert (
-        Url.new_from_str('http://eg.cc/id.txt#h1').__str__()
-        == "URL(protocol=http, username=, password=, netloc=eg.cc, host=eg.cc, port=80, path=/id.txt, params={}, query={}, fragment=h1)"
-    )
-    assert (
-        Url.new_from_str('http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1').__str__()
-        == "URL(protocol=http, username=usr, password=pwd, netloc=eg.cc, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=h1)"
+        '''protocol=http, username=usr, password=pwd, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=h1'''
+        in Url.new_from_string('http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1').__str__()
     )
 
     assert (
-        Url.new_from_dict(
+        'protocol=socks5h, username=admin, password=, host=127.0.0.1, port=8080, path=/admin, params={}, query={}, fragment='
+        in Url.new_from_dict(
             {'protocol': 'socks5h', 'host': '127.0.0.1', 'port': '8080', 'username': 'admin', 'path': '/admin'}
         ).__str__()
-        == 'URL(protocol=socks5h, username=admin, password=, netloc=127.0.0.1:8080, host=127.0.0.1, port=8080, path=/admin, params={}, query={}, fragment=)'
     )
     assert (
-        Url.new_from_dict({'host': '127.0.0.1', 'port': '8080'}, is_verify=False).__str__()
-        == 'URL(protocol=, username=, password=, netloc=127.0.0.1:8080, host=127.0.0.1, port=8080, path=/, params={}, query={}, fragment=)'
+        'protocol=, username=, password=, host=127.0.0.1, port=8080, path=/, params={}, query={}, fragment='
+        in Url.new_from_dict({'host': '127.0.0.1', 'port': '8080'}, is_verify=False).__str__()
     )
 
+    url = new('http://eg.cc:8080/i.txt?')
+    assert url.netloc == 'eg.cc:8080'
     url = new('http://eg.cc/i.txt?')
-    assert url.netloc == 'eg.cc'
     assert url.query2str() == ''
     url = new('http://eg.cc:1080/i.txt?q1=&q2=3&q3=6')
     assert url.query2str() == 'q1=&q2=3&q3=6'
-    assert url.resource() == '/i.txt?q1=&q2=3&q3=6'
-    assert url.origin() == 'http://eg.cc:1080'
-    assert url.string() == 'http://eg.cc:1080/i.txt?q1=&q2=3&q3=6'
-    assert url.join('http://ww.cc/s.txt').string() == 'http://ww.cc/s.txt'
-    assert url.join('/new.txt').string() == 'http://eg.cc:1080/new.txt'
-    assert url.join('abc/new.txt').string() == 'http://eg.cc:1080/i.txt/abc/new.txt'
+    assert url.get_resource() == '/i.txt?q1=&q2=3&q3=6'
+    assert url.get_origin() == 'http://eg.cc:1080'
+    assert url.get_full() == 'http://eg.cc:1080/i.txt?q1=&q2=3&q3=6'
+    assert url.join('http://ww.cc/s.txt').get_full() == 'http://ww.cc/s.txt'
+    assert url.join('/new.txt').get_full() == 'http://eg.cc:1080/new.txt'
+    assert url.join('abc/new.txt').get_full() == 'http://eg.cc:1080/i.txt/abc/new.txt'

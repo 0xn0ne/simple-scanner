@@ -4,13 +4,15 @@ import traceback
 from typing import Any, Dict, List, Tuple, Union
 
 try:
-    from utils import LANG, PLUGIN_TYPE, USER_AGENT_LIST, http_client, net_echo, sockets, urlutil
+    from utils import (LANG, PLUGIN_TYPE, USER_AGENT_LIST, http_client,
+                       net_echo, sockets, urlutil)
 except:
     import pathlib
     import sys
 
     sys.path.append(pathlib.Path(__file__).parent.parent.__str__())
-    from utils import LANG, PLUGIN_TYPE, USER_AGENT_LIST, http_client, net_echo, sockets, urlutil
+    from utils import (LANG, PLUGIN_TYPE, USER_AGENT_LIST, http_client,
+                       net_echo, sockets, urlutil)
 
 
 class Info:
@@ -20,7 +22,7 @@ class Info:
         catalog: str = '',
         itype: int = PLUGIN_TYPE.MODULE,
         protocols: List[str] = None,
-        port: str = '80',
+        port: int = 80,
     ) -> None:
         self.name = name
         self.catalog = catalog
@@ -48,21 +50,12 @@ class PluginBase:
         self.echo = echo
 
     def http_or_https(self, url: urlutil.Url, *args, **kwargs):
-        err, response = self.http.rq('https://{}:{}/'.format(url.host, url.port), 'HEAD', timeout=5)
-        if not err:
+        ret = self.http.is_https(url.host, url.port)
+        if ret:
             return 'https'
-        err, response = self.http.rq(
-            'http://{}:{}/'.format(url.host, url.port), 'HEAD', allow_redirects=False, timeout=5
-        )
-        if not err:
-            if 'Location' in response.headers:
-                obj_url = urlutil.Url(response.headers['Location'])
-                if obj_url.host == url.host and obj_url.port == url.port:
-                    return obj_url.protocol
-            return 'http'
         return 'http'
 
-    def do_testing(self, url: str, data: Dict = None) -> Dict:
+    def do_testing(self, url: Union[str, urlutil.Url], data: Dict = None) -> Dict:
         ret = {
             'name': self.info.name,
             'catalog': self.info.catalog,
@@ -70,31 +63,31 @@ class PluginBase:
             'plugin_type': PLUGIN_TYPE.v2k(self.info.itype),
         }
         data = data or {}
-
-        o_url = self.make_url(url)
-        if not o_url:
+        if isinstance(url, str):
+            url = urlutil.Url(url)
+        if not self.is_vaild_url(url):
             ret.update(
                 {
                     'is_exists': False,
                     'protocol': '',
                     'host': '',
-                    'port': '',
+                    'port': 0,
                     'data': {'msg': 'incorrect address "{}"'.format(url)},
                 }
             )
             return ret
-        o_url.port = o_url.port or self.info.port
+        url.port = url.port or self.info.port
         self.http = http_client.new(
             tries=3, headers={'User-Agent': USER_AGENT_LIST[random.randint(0, len(USER_AGENT_LIST) - 1)]}
         )
-        self.tcp = self.cli_mng.new_tcp(o_url.host, o_url.i_port)
+        self.tcp = self.cli_mng.new_tcp(url.host, url.port)
         try:
-            ret['is_exists'], ret['data'] = self.run(o_url, **data)
+            ret['is_exists'], ret['data'] = self.run(url, **data)
             if self.tcp.is_connect():
                 self.tcp.close()
         except Exception as e:
             ret['is_exists'], ret['data'] = False, traceback.format_exc()
-        ret.update({'protocol': o_url.protocol, 'host': o_url.host, 'port': o_url.port, 'url': o_url.string()})
+        ret.update({'protocol': url.protocol, 'host': url.host, 'port': url.port, 'url': url.get_full()})
         return ret
 
     def make_tcp_echo(self, pre_id: str = ''):
@@ -115,23 +108,20 @@ class PluginBase:
             raise ModuleNotFoundError('requires network echo.')
         return self.echo.get_results(random_id)
 
-    def make_url(self, url: str) -> Union[urlutil.Url, Any]:
-        new_url = urlutil.new()
-        new_url.from_str(url, False)
-        if not new_url.host:
+    def is_vaild_url(self, url: urlutil.Url) -> bool:
+        if not url.host:
             # 没有host，跳过检测
             # raise ValueError('incorrect address "{}"'.format(url))
-            return
-        if not new_url.protocol:
-            new_url.protocol = self.info.protocols[0]
-        if not new_url.protocol in self.info.protocols:
+            return False
+        if not url.protocol:
+            url.protocol = self.info.protocols[0]
+        if not url.protocol in self.info.protocols:
             # 协议不对，跳过检测
-            return
-
-        return new_url
+            return False
+        return True
 
     def set_info(self) -> Dict[str, Any]:
-        raise NotImplementedError('')
+        raise NotImplementedError('the plugin does not use the set_info() function to set information')
         # return {
         #     # 字符型，漏洞名称
         #     'name': '',
@@ -146,4 +136,19 @@ class PluginBase:
         # }
 
     def run(self, url: urlutil.Url, *args, **kwargs) -> Tuple[bool, Any]:
-        raise NotImplementedError('')
+        """_summary_
+
+        Args:
+            url (urlutil.Url): _description_
+
+        Raises:
+            NotImplementedError: 未改写直接调用该函数会直接报错
+
+        Returns:
+            Tuple[bool, Any]: _description_
+        """
+        raise NotImplementedError(
+            'please rewrite the run function first, plugin name: {}, plugin catalog: {}'.format(
+                self.info.name, self.info.catalog
+            )
+        )

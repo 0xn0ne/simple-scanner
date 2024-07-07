@@ -19,7 +19,7 @@ class Plugin(plugin.PluginBase):
         return {
             # 字符型，漏洞名称
             'name': 'Oracle Weblogic Console Login Page',
-            # 字符型，漏洞编号，比如 CVE/CAN/BUGTRAQ/CNCVE/CNVD/CNNVD
+            # 字符型，漏洞编号，比如 CVE/CAN/BUGTRAQ/CNCVE/CNVD/CNNVD/None
             'catalog': '',
             # 数字型，漏洞类型，MODULE 为模块检测，POC为原理检测
             'itype': PLUGIN_TYPE.MODULE,
@@ -33,21 +33,22 @@ class Plugin(plugin.PluginBase):
         """
         需要重写的函数，程序会自动调用 Plugin.run(url) 函数运行，接收的参数一定要带 *args, **kwargs，因为配置文件的数据会导入到插件中
         """
-        url.protocol = url.protocol or self.http_or_https(
-            url
-        )  # 检测 protocol 如果不存在自动检测目标是 http 或 https 协议
-        if not url.protocol:  # 检测和自动检测都找不到可用协议
+        # 检测 protocol 如果不存在自动检测目标是 http 或 https 协议
+        url.protocol = url.protocol or self.http_or_https(url)
+        # 检测和自动检测都找不到可用协议
+        if not url.protocol:
             return False, 'the network protocol does not match.'
-        path = (
-            url.path if url.path and url.path != '/' else '/console/login/LoginForm.jsp'
-        )  # 如果输入包含路径的 URL 则使用输入的路径，没有则使用常见的路径
-
-        url = url.join(path)  # URL拼接
-
-        err, response = self.http.rq(url.string(), timeout=5)  # 发出 HTTP 请求
-        if err:  # 判断 HTTP 请求有没有发生错误
+        # 如果输入包含路径的 URL 则使用输入的路径，没有则使用常见的路径
+        path = url.path if url.path and url.path != '/' else '/console/login/LoginForm.jsp'
+        # URL拼接
+        url = url.join(path)
+        # 发出 HTTP 请求
+        err, response = self.http.rq(url.get_full(), timeout=5)
+        # 判断 HTTP 请求有没有发生错误
+        if err:
             return False, err
-        return response.status_code == 200, response.status_code  # 返回是否存在漏洞，漏洞相关信息
+        # 返回是否存在漏洞，漏洞相关信息，返回的第一个参数为是否存在漏洞，第二个参数为漏洞相关信息，可以写任何内容
+        return response.status_code == 200, response.status_code
 
 
 if __name__ == '__main__':

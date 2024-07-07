@@ -1,3 +1,7 @@
+import csv
+import pathlib
+from typing import Dict, List, Union
+
 from utils import language, net_echo, state
 
 
@@ -46,3 +50,14 @@ USER_AGENT_LIST = [
 ]
 
 NET_ECHO: net_echo.EchoServiceBase = None
+
+
+def save_csv(values: List[Union[Dict, List]], filename: Union[pathlib.Path, str] = 'output.csv', *args, **kwargs):
+    with open(filename, 'w', newline='', *args, **kwargs) as _file:
+        if isinstance(values[0], List):
+            writer = csv.writer(_file, quoting=csv.QUOTE_MINIMAL)
+        else:
+            writer = csv.DictWriter(_file, fieldnames=values[0].keys(), quoting=csv.QUOTE_MINIMAL)
+            writer.writeheader()
+            
+        writer.writerows(values)
