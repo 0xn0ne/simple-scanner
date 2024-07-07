@@ -57,7 +57,7 @@ class Server:
                     if len(rec_data) % bufsize != 0:
                         break
                 except TimeoutError:
-                    # 连接时间过长 settimeout 造成的错误
+                    # 连接时间过长 TimeoutError 造成的错误
                     break
                 except BrokenPipeError:
                     # 当没数据 timeout_nondate 后被强制 shutdown 造成的错误
@@ -86,10 +86,10 @@ class ClientTcp(socket.socket):
         self,
         host: str,
         port: int,
-        family: socket.AddressFamily | int = -1,
-        type: socket.SocketKind | int = -1,
+        family: Union[socket.AddressFamily, int] = -1,
+        type: Union[socket.SocketKind, int] = -1,
         proto: int = -1,
-        fileno: int | None = None,
+        fileno: Union[int, None] = None,
     ) -> None:
         super().__init__(family, type, proto, fileno)
         self.host = host
@@ -178,8 +178,8 @@ class ClientManager:
     def __init__(
         self,
         is_block: bool = True,
-        family: socket.AddressFamily | int = -1,
-        _type: socket.SocketKind | int = -1,
+        family: Union[socket.AddressFamily, int] = -1,
+        _type: Union[socket.SocketKind, int] = -1,
         proto: int = -1,
         timeout: float = 8,
     ):
@@ -193,10 +193,10 @@ class ClientManager:
         self,
         host: str,
         port: int,
-        family: socket.AddressFamily | int = None,
-        _type: socket.SocketKind | int = None,
+        family: Union[socket.AddressFamily, int] = None,
+        _type: Union[socket.SocketKind, int] = None,
         proto: int = None,
-        file_no: int | None = None,
+        file_no: Union[int, None] = None,
     ) -> ClientTcp:
         """
         创建一个 tcp 的 socket 通道，但不会直接启动连接
@@ -221,6 +221,7 @@ def new(*args, **kwargs):
 
 
 if __name__ == '__main__':
+    pass
     # b''.decode()
     # ss = Server()
     # ss.run()
@@ -228,7 +229,7 @@ if __name__ == '__main__':
     # result = ss.wait_request()
     # print(result)
 
-    sm = ClientManager()
-    sk = sm.new_tcp('192.168.245.128', 7001)
-    sk.connect()
-    print('DEBUG', sk.rq(b't3 9.2.0.0\nAS:255\nHL:92\nMS:10000000\nPU:t3://127.0.0.1:7001\n\n'))
+    # sm = ClientManager()
+    # sk = sm.new_tcp('192.168.245.128', 7001)
+    # sk.connect()
+    # print('DEBUG', sk.rq(b't3 9.2.0.0\nAS:255\nHL:92\nMS:10000000\nPU:t3://127.0.0.1:7001\n\n'))
