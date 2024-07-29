@@ -20,7 +20,7 @@ from typing import Any, Generator, List
 # 这个模块要求所有代码都是异步，否则有和没有差不多，再考虑一下把
 # import aiomultiprocess
 
-class ProcessPoolHelper(concurrent.futures.ProcessPoolExecutor):
+class ProcessPool(concurrent.futures.ProcessPoolExecutor):
     def __init__(self, max_workers=None, mp_context=None, initializer=None, initargs=()):
         super().__init__(max_workers, mp_context, initializer, initargs)
         self.jobs: List[concurrent.futures.Future] = []
@@ -42,7 +42,7 @@ class ProcessPoolHelper(concurrent.futures.ProcessPoolExecutor):
 
 
 def new(*args, **kwargs):
-    return ProcessPoolHelper(*args, **kwargs)
+    return ProcessPool(*args, **kwargs)
 
 
 import functools
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     print('return:', __test_return_func(500, 550))
     print('run one times, total time(s):', time.time() - start_time)
 
-    pph = ProcessPoolHelper(3)
+    pph = ProcessPool(3)
 
     print('__test_performance_func')
     start_time = time.time()

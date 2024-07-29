@@ -49,6 +49,7 @@ class ProgressBar:
         self.mininterval = mininterval
         self.ncols = ncols
         self.msg_list = []
+        self.print_func = print
 
     def print(self, msg: str, *args, **kwargs):
         self.msg_list.append(msg)
@@ -77,7 +78,7 @@ class ProgressBar:
             yield it
             while self.msg_list:
                 with redirect_stdout():
-                    print(self.msg_list.pop(0))
+                    self.print_func(self.msg_list.pop(0))
 
 
 def new(*args, **kwargs):

@@ -1,42 +1,81 @@
-"[!] plugin list is empty, exit.":
-  zh_CN: "[!] \u672A\u627E\u5230\u53EF\u7528\u63D2\u4EF6\uFF0C\u7A0B\u5E8F\u9000\u51FA"
 "[+] {}, {}, url: {}, info: {}":
-  zh_CN: "[+] {}，{}，URL: {}，\u4FE1\u606F：{}"
+  zh_CN: "[+] {}\uFF0C{}\uFF0CURL: {}\uFF0C\u4FE1\u606F\uFF1A{}"
+adding plugins...: "\u63D2\u4EF6\u8C03\u5EA6\u4E2D..."
+? "disable port scanning. note: if the port not open, the program sending PAYLOAD
+  will cause meaningless waiting time for a response"
+: zh_CN:
+    "\u7981\u7528\u7AEF\u53E3\u626B\u63CF\u3002\u6CE8\u610F\uFF1A\u5982\u679C\
+    \u7AEF\u53E3\u672A\u6253\u5F00\uFF0C\u53D1\u9001PAYLOAD\u7684\u7A0B\u5E8F\u5C06\
+    \u5BFC\u81F4\u65E0\u610F\u4E49\u7684\u54CD\u5E94\u7B49\u5F85\u65F6\u95F4"
+"host info saved:":
+  zh_CN: "\u4E3B\u673A\u4FE1\u606F\u4FDD\u5B58\u81F3\uFF1A"
+initializing...:
+  zh_CN: "\u521D\u59CB\u5316\u4E2D..."
 ? "network reflection mode used, available dnslogorg, dnslogcn, localsocket. default
   dnslogorg. !!!note: there is a difference between tcp reflection and dns reflection
   detection logic, and you need to pay attention to what type of reflection tool the
   target POC is using when using it."
-: {
-    zh_CN: "使用的网络反射模式，可用 dnslogorg, dnslogcn, localsocket；默认为 dnslogorg。注意：TCP 的反射和 DNS 的反射检测逻辑有区别，使用时需要关注 POC 是使用的什么类型反射工具。",
-  }
+: zh_CN:
+    "\u4F7F\u7528\u7684\u7F51\u7EDC\u53CD\u5C04\u6A21\u5F0F\uFF0C\u53EF\u7528\
+    \ dnslogorg, dnslogcn, localsocket\uFF1B\u9ED8\u8BA4\u4E3A dnslogorg\u3002\u6CE8\
+    \u610F\uFF1ATCP \u7684\u53CD\u5C04\u548C DNS \u7684\u53CD\u5C04\u68C0\u6D4B\u903B\
+    \u8F91\u6709\u533A\u522B\uFF0C\u4F7F\u7528\u65F6\u9700\u8981\u5173\u6CE8 POC \u662F\
+    \u4F7F\u7528\u7684\u4EC0\u4E48\u7C7B\u578B\u53CD\u5C04\u5DE5\u5177\u3002"
 number of program processes, default 5 processes.:
   zh_CN: "\u8C03\u7528\u8FDB\u7A0B\u6570\uFF0C\u9ED8\u8BA4 5 \u4E2A\u8FDB\u7A0B"
 output file format, available formats json, csv. default csv format.:
   zh_CN:
     "\u8F93\u51FA\u7684\u6587\u4EF6\u683C\u5F0F\uFF0C\u53EF\u7528\u683C\u5F0F\
     \u6709 json\u3001csv\uFF0C\u9ED8\u8BA4\u8F93\u51FA csv \u683C\u5F0F"
+plugin list is empty, exit.:
+  zh_CN: "\u672A\u627E\u5230\u53EF\u7528\u63D2\u4EF6\uFF0C\u7A0B\u5E8F\u9000\u51FA"
+"plugin result saved: {}": "\u63D2\u4EF6\u7ED3\u679C\u5B58\u653E\uFF1A{}"
+plugin scanning...:
+  zh_CN: "\u63D2\u4EF6\u626B\u63CF\u4E2D..."
+ports scanning, total of {} hosts, {} ports:
+  zh_CN:
+    "\u7AEF\u53E3\u626B\u63CF\u4E2D\uFF0C\u4E3B\u673A {} \u53F0\uFF0C\u7AEF\u53E3\
+    \ {} \u4E2A"
+ports scanning, total of {} hosts, {} ports...:
+  "\u7AEF\u53E3\u626B\u63CF\uFF0C\u5171\
+  \u8BA1 {} \u4E2A\u4E3B\u673A\uFF0C{} \u4E2A\u7AEF\u53E3..."
+ports scanning...:
+  zh_CN: "\u7AEF\u53E3\u626B\u63CF\u4E2D..."
+"scannable target not found. if port scanning is enabled, check file:":
+  "\u672A\u627E\
+  \u5230\u53EF\u626B\u63CF\u7684\u76EE\u6807\u3002\u5982\u679C\u542F\u7528\u4E86\u7AEF\
+  \u53E3\u626B\u63CF\uFF0C\u8BF7\u68C0\u67E5\u6587\u4EF6\uFF1A"
 scanning targets, or scanning target list files (e.g. "127.0.0.1:80").:
   zh_CN:
     "\u626B\u63CF\u76EE\u6807\uFF0C\u6216\u8005\u626B\u63CF\u76EE\u6807\u5217\
     \u8868\u6587\u4EF6\uFF08\u6837\u4F8B\uFF1A\"127.0.0.1:80\"\uFF09"
-? "silent mode: when turned on, no hit data will be output on the console. use a progress bar instead."
-: zh_CN:
+"silent mode: when turned on, no hit data will be output on the console. use a progress bar instead.":
+  zh_CN:
     "\u9759\u9ED8\u6A21\u5F0F\uFF1A\u5F00\u542F\u540E\u63A7\u5236\u53F0\u4E0A\
     \u4E0D\u4F1A\u8F93\u51FA\u6D4B\u8BD5\u7684\u4FE1\u606F"
 the "name" and "catalog" of the plugin are empty, one of them must be set.:
   zh_CN:
     "\u63D2\u4EF6\u7684 \"name\" \u548C \"catalog\" \u4E3A\u7A7A\uFF0C\u5FC5\u987B\
     \u8BBE\u7F6E\u5176\u4E2D\u4E00\u4E2A"
-? 'the "protocol" information for plugins with name "{}" and catalog "{}" is empty, you must set the list of network protocols used by the plugin.'
-: zh_CN: '名字为 "{}" 编号为 "{}" 的插件 "protocol" 信息为空，必须设置插件使用的网络协议列表。'
+? the "protocol" information for plugins with name "{}" and catalog "{}" is empty,
+  you must set the list of network protocols used by the plugin.
+: zh_CN:
+    "\u540D\u5B57\u4E3A \"{}\" \u7F16\u53F7\u4E3A \"{}\" \u7684\u63D2\u4EF6 \"\
+    protocol\" \u4FE1\u606F\u4E3A\u7A7A\uFF0C\u5FC5\u987B\u8BBE\u7F6E\u63D2\u4EF6\u4F7F\
+    \u7528\u7684\u7F51\u7EDC\u534F\u8BAE\u5217\u8868\u3002"
 the "protocol" of the plugin are empty, one of them must be set.:
   zh_CN:
     "\u63D2\u4EF6\u7684 \"protocol\" \u4E3A\u7A7A\uFF0C\u5FC5\u987B\u8BBE\u7F6E\
     \u63D2\u4EF6\u4F7F\u7528\u7684\u7F51\u7EDC\u534F\u8BAE\u5217\u8868"
+time interval (in seconds) between submitting a task to the process pool.:
+  zh_CN:
+    "\u5411\u8FDB\u7A0B\u6C60\u63D0\u4EA4\u4EFB\u52A1\u4E4B\u95F4\u7684\u65F6\
+    \u95F4\u95F4\u9694\uFF08\u4EE5\u79D2\u4E3A\u5355\u4F4D\uFF09\u3002"
 vulnerability plugins name used, default scan all modules (e.g. "CVE-2014-*").:
   zh_CN:
     "\u4F7F\u7528\u7684\u6F0F\u6D1E\u63D2\u4EF6\uFF0C\u9ED8\u8BA4\u626B\u63CF\
     \u6240\u6709\u63D2\u4EF6\uFF08\u6837\u4F8B\uFF1A\"CVE-2014-*\"\uFF09"
+wait for plugin scanning...: "\u7B49\u5F85\u63D2\u4EF6\u626B\u63CF\u4E2D..."
 ? whether to automatically use the redirected link if it encounters a redirect, the
   default is not to use the redirected link.
 : zh_CN:

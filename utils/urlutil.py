@@ -53,7 +53,7 @@ class DictStr(dict):
 
 
 class Url:
-    def __init__(self, url: str = None):
+    def __init__(self, url: str = None, is_verify=True):
         """解析URL中的信息，并创建URL对象
         如：传入 http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1 字符串解析结果为 <__main__.Url object at 0x1af298070e0, protocol=http, username=usr, password=pwd, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=h1>
 
@@ -76,7 +76,7 @@ class Url:
 
         if not url:
             return
-        self = self.from_string(url, is_verify=False)
+        self = self.from_string(url, is_verify=is_verify)
 
     @property
     def s_port(self):
@@ -120,6 +120,16 @@ class Url:
         ret.from_dict(info, is_verify)
         return ret
 
+    def is_able(self, is_check_protocol: bool = True, is_check_port: bool = True) -> bool:
+        """判断当前URL是否可用，根据协议、HOST、PORT进行检测"""
+        if is_check_protocol and not self.protocol:
+            return False
+        if is_check_port and not self.port:
+            return False
+        if not self.host:
+            return False
+        return True
+
     def from_string(self, url: str, is_verify: bool = True):
         """方便内部调用，直接解析字符串并赋值到当前的URL对象中
 
@@ -142,7 +152,7 @@ class Url:
             self.password = r_auth.group(2) or ''
             url = url[r_auth.end() :]
 
-        r_netloc = re.search(r'([\w-]{,63}(?:\.[\w-]{,63})+(?::(\d{1,5}))?)', url)
+        r_netloc = re.search(r'([\w-]{1,63}(?:\.[\w-]{1,63})+(?::(\d{1,5}))?)', url)
         if is_verify and not (r_prtcl or r_netloc):
             raise ValueError('incorrect url "{}", missing protocol or host.'.format(url))
 
@@ -185,6 +195,11 @@ class Url:
             setattr(self, key, info[key])
 
     def get_origin(self) -> str:
+        """获取 URL 组织的组合字符串，如：`http://usr:pwd@eg.com:8080`
+
+        Returns:
+            str: 组合后的字符串
+        """
         if self.username and not self.password:
             base = '{}://{}@{}'.format(self.protocol, self.username, self.netloc)
         elif self.username and self.password:
@@ -194,6 +209,11 @@ class Url:
         return base
 
     def get_resource(self, is_encode=True) -> str:
+        """获取 URL 资源的组合字符串，如：`?id=1#hello`
+
+        Returns:
+            str: 组合后的字符串
+        """
         base = self.path
         if self.params:
             for k in self.params:
@@ -205,6 +225,11 @@ class Url:
         return base
 
     def get_full(self, is_encode: bool = True) -> str:
+        """获取 URL 完整的组合字符串，如：`http://usr:pwd@eg.com:8080?id=1#hello`
+
+        Returns:
+            str: 组合后的字符串
+        """
         return self.get_origin() + self.get_resource(is_encode)
 
     def query2str(self, is_encode=True) -> str:
@@ -222,14 +247,33 @@ class Url:
         join_result = pathlib.PurePosixPath(self.path).joinpath(join_str).__str__()
         return self.new_from_string(self.get_origin() + join_result)
 
-    def __repr__(self):
-        s_attrs = ''
-        for i in self.__dict__:
-            if isinstance(i, Callable) or i.startswith('_'):
+    def details(self):
+        string_attrs = ''
+        for key in self.__dict__:
+            attr = getattr(self, key)
+            if isinstance(attr, Callable) or key.startswith('_'):
                 continue
-            s_attrs += f', {i}={getattr(self, i)}'
-        ret = '<{}.{} object at {}{}>'.format(self.__module__, type(self).__name__, hex(id(self)), s_attrs)
+            string_attrs += f', {key}={getattr(self, key)}'
+        ret = f'<{self.__module__}.{type(self).__name__} object at {hex(id(self))}{string_attrs}>'
         return ret
+
+    def __repr__(self):
+        return self.get_full()
+
+    def __hash__(self) -> int:
+        return hash(self.get_full())
+
+    def __lt__(self, other: Self) -> bool:
+        return self.get_full() < other.get_full()
+
+    def __le__(self, other: Self) -> bool:
+        return self.get_full() <= other.get_full()
+
+    def __gt__(self, other: Self) -> bool:
+        return self.get_full() > other.get_full()
+
+    def __ge__(self, other: Self) -> bool:
+        return self.get_full() >= other.get_full()
 
 
 def new(*args, **kwargs) -> Url:
@@ -238,31 +282,35 @@ def new(*args, **kwargs) -> Url:
 
 if __name__ == '__main__':
     assert (
-        'protocol=, username=, password=, host=eg.cc, port=, path=/, params={}, query={}, fragment='
-        in Url.new_from_string('eg.cc', is_verify=False).__str__()
+        'protocol=, username=, password=, host=eg.cc, port=0, path=/, params={}, query={}, fragment='
+        in Url.new_from_string('eg.cc', is_verify=False).details()
     )
     assert (
         'protocol=, username=, password=, host=127.0.0.1, port=80, path=/, params={}, query={}, fragment='
-        in Url.new_from_string('127.0.0.1:80', is_verify=False).__str__()
+        in Url.new_from_string('127.0.0.1:80', is_verify=False).details()
+    )
+    assert (
+        'protocol=http, username=, password=, host=127.0.0.1, port=80, path=/, params={}, query={}, fragment='
+        in Url.new_from_string('http://127.0.0.1', is_verify=False).details()
     )
     assert (
         'protocol=, username=usr, password=pwd, host=eg.cc, port=80, path=/, params={}, query={}, fragment='
-        in Url.new_from_string('usr:pwd@eg.cc:80', is_verify=False).__str__()
+        in Url.new_from_string('usr:pwd@eg.cc:80', is_verify=False).details()
     )
     assert (
         '''protocol=http, username=usr, password=pwd, host=eg.cc, port=80, path=/id.txt, params={'p1': '6', 'p2': '3'}, query={'q1': '', 'q2': '3', 'q3': '6'}, fragment=h1'''
-        in Url.new_from_string('http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1').__str__()
+        in Url.new_from_string('http://usr:pwd@eg.cc/id.txt;p1=6;p2=3?q1=&q2=3&q3=6#h1').details()
     )
 
     assert (
         'protocol=socks5h, username=admin, password=, host=127.0.0.1, port=8080, path=/admin, params={}, query={}, fragment='
         in Url.new_from_dict(
             {'protocol': 'socks5h', 'host': '127.0.0.1', 'port': '8080', 'username': 'admin', 'path': '/admin'}
-        ).__str__()
+        ).details()
     )
     assert (
         'protocol=, username=, password=, host=127.0.0.1, port=8080, path=/, params={}, query={}, fragment='
-        in Url.new_from_dict({'host': '127.0.0.1', 'port': '8080'}, is_verify=False).__str__()
+        in Url.new_from_dict({'host': '127.0.0.1', 'port': '8080'}, is_verify=False).details()
     )
 
     url = new('http://eg.cc:8080/i.txt?')

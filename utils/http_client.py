@@ -1,17 +1,54 @@
 #!/bin/python3
 # _*_ coding:utf-8 _*_
 #
-# http_client.py
+# httpcli.py
 # http 请求工具，Python 本身并不支持 socks 代理如果需要使用 socks 代理则安装 pysocks、requests[socks]，
+# requests_toolbelt 为 WebKitFormBoundary 编码使用
+# 依赖安装：pip install requests pysocks requests[socks]
+# browser_cookie3 文档：https://github.com/borisbabic/browser_cookie3
 
 import http.cookiejar
 import logging
+import random
 import re
 import ssl
 import time
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
-import requests
+from requests import Request, Response, Session, adapters, exceptions
+
+DEFAULT_USER_AGENT_LNX = [
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux i686; rv:127.0) Gecko/20100101 Firefox/127.0',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0',
+]
+DEFAULT_USER_AGENT_MAC = [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.2592.87',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:127.0) Gecko/20100101 Firefox/127.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0',
+]
+DEFAULT_USER_AGENT_WIN = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.3',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0',
+]
+DEFAULT_USER_AGENT_MOB = [
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.6478.108 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 EdgiOS/126.2592.86 Mobile/15E148 Safari/605.1.15',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 14_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/127.0 Mobile/15E148 Safari/605.1.15',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.122 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 10; HD1913) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.122 Mobile Safari/537.36 EdgA/126.0.2592.80',
+    'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.122 Mobile Safari/537.36 EdgA/126.0.2592.80',
+]
+DEFAULT_USER_AGENT = DEFAULT_USER_AGENT_LNX + DEFAULT_USER_AGENT_MAC + DEFAULT_USER_AGENT_WIN
+DEFAULT_HEADERS = {
+    'User-Agent': DEFAULT_USER_AGENT[random.randint(0, len(DEFAULT_USER_AGENT) - 1)],
+    'Referer': 'https://www.google.com',
+}
 
 
 def cookie_str2list(cookies: str) -> List:
@@ -25,42 +62,25 @@ def cookie_str2dict(cookies: str) -> Dict:
     return ret
 
 
-class HttpClient(requests.Session):
+class HttpClient(Session):
+    log: logging.Logger
+    headers: Dict
+
     def __init__(
         self,
-        headers: Dict = None,
-        tries: int = 5,
-        timeout: float = 120,
+        headers: Dict[str, str] = None,
+        tries: int = 3,
+        timeout: float = 3,
     ) -> None:
         super(HttpClient, self).__init__()
-        # timeout 必须赋值否则在多线程场景下 None 值的属性会被删除
         self.timeout = timeout
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, '
-            'like Gecko) Chrome/96.0.4664.55 Safari/537.36',
-            'Referer': 'https://www.google.com',
-        }
         if headers:
             self.headers.update(headers)
-        self.mount('http://', requests.adapters.HTTPAdapter(max_retries=tries))
-        self.mount('https://', requests.adapters.HTTPAdapter(max_retries=tries))
+        else:
+            self.headers.update(DEFAULT_HEADERS)
 
-        def prepare_request(request: requests.Request):
-            ret = self.before_request(request)
-            if isinstance(ret, requests.Request):
-                return super(HttpClient, self).prepare_request(request)
-            return ret
-
-        self.prepare_request = prepare_request
-
-    def before_request(self, request: requests.Request) -> Union[requests.Request, requests.PreparedRequest]:
-        return request
-
-    @staticmethod
-    def after_request(
-        err: Union[Exception, Any], response: Union[requests.Response, Any]
-    ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
-        return err, response
+        self.mount('http://', adapters.HTTPAdapter(max_retries=tries))
+        self.mount('https://', adapters.HTTPAdapter(max_retries=tries))
 
     def rq(
         self,
@@ -78,9 +98,9 @@ class HttpClient(requests.Session):
         auth=None,
         *args,
         **kwargs
-    ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
+    ) -> Tuple[Exception | Any, Response | Any]:
         try:
-            res = self.request(
+            response = self.request(
                 method,
                 url,
                 headers=headers,
@@ -96,53 +116,30 @@ class HttpClient(requests.Session):
                 *args,
                 **kwargs
             )
-            return self.after_request(None, res)
-        except requests.exceptions.RequestException as error:
-            return self.after_request(error, None)
-
-    # def try_rq(
-    #     self,
-    #     request: requests.Request,
-    #     timeout=None,
-    #     allow_redirects=True,
-    #     proxies=None,
-    #     stream=None,
-    #     verify=None,
-    #     cert=None,
-    # ) -> requests.Response:
-    #     prep = self.prepare_request(request)
-
-    #     send_kwargs = {
-    #         "timeout": timeout,
-    #         "allow_redirects": allow_redirects,
-    #     }
-    #     send_kwargs.update(self.merge_environment_settings(prep.url, proxies or {}, stream, verify, cert))
-
-    #     # Send the request.
-    #     return self.send(prep, **send_kwargs)
+            return None, response
+        except exceptions.RequestException as error:
+            return error, None
 
     def retry(
-        self, response: requests.Response, timeout: float = None, allow_redirects: bool = True
-    ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
+        self,
+        response_or_request: Response | Request,
+        timeout: float = None,
+        allow_redirects: bool = True,
+    ) -> Tuple[Exception | None, Response | None]:
+        request = response_or_request.request if isinstance(response_or_request, Response) else response_or_request
+
         kwargs = {
-            'method': response.request.method,
-            'url': response.request.url,
-            'data': response.request.body,
-            'headers': response.request.headers,
-            'hooks': response.request.hooks,
+            'method': request.method,
+            'URL': request.url,
+            'DATA': request.body,
+            'headers': request.headers,
+            'hooks': request.hooks,
             'timeout': timeout or self.timeout,
             'allow_redirects': allow_redirects,
         }
-        try:
-            return self.after_request(None, self.request(**kwargs))
-        except requests.exceptions.RequestException as error:
-            return self.after_request(error, None)
+        return self.rq(**kwargs)
 
-    def set_cookies(
-        self,
-        cookies: Union[str, List, Dict, http.cookiejar.CookieJar],
-        domain: str = '*',
-    ):
+    def set_cookies(self, cookies: str | List | Dict | http.cookiejar.CookieJar, domain: str = '*'):
         if isinstance(cookies, Dict):
             for key in cookies:
                 self.cookies.set(key, cookies[key], domain=domain)
@@ -155,8 +152,8 @@ class HttpClient(requests.Session):
             for row in cookies:
                 self.cookies.set(row[0], row[1])
 
-    def cookies2dict(self, is_drop: bool = False) -> Dict[str, Union[List, str]]:
-        ret: Dict[str, Union[List, str]] = {}
+    def cookies2dict(self, is_drop: bool = False) -> Dict[str, List | str]:
+        ret = {}
         for key, value in self.cookies.iteritems():
             if is_drop:
                 ret[key] = value
@@ -177,28 +174,30 @@ class HttpClient(requests.Session):
         self.proxies.update(proxies)
         return
 
-    def is_https(self, addr, port, timeout=3, *args, **kwargs) -> Union[str, bool]:
+    def is_https(self, addr: str, port: int, *args, **kwargs) -> str | bool:
+        """geven 模块打 monkey 补丁后 sockets 模块没有 timeout 这个选项，无效的HTTPS证书会返回失败
+
+        Args:
+            addr (str): 目标地址
+            port (int): 目标端口
+
+        Returns:
+            Union[str, bool]: 如果是SSL端口会返回SSL公钥信息，否则返回 False
+        """
         try:
-            return ssl.get_server_certificate((addr, port), timeout=timeout, *args, **kwargs)
+            return ssl.get_server_certificate((addr, port), *args, **kwargs)
         except ssl.SSLError:
             return False
 
-
-def new(
-    headers: Dict = None,
-    tries: int = 5,
-    timeout: float = None,
-):
-    return HttpClient(headers, tries, timeout)
+    def get_user_agent_random(self, user_agent_list: List[str] = DEFAULT_USER_AGENT):
+        return random.choice(user_agent_list)
 
 
 if __name__ == '__main__':
-    cli = new()
+    cli = HttpClient()
 
-    # err, ret = cli.rq(
-    #     'https://why-are-there-so-many-domian-name-in-the-world.com/'
-    # )
-    # print(err, ret)
+    err, ret = cli.rq('https://why-are-there-so-many-domian-name-in-the-world.com/')
+    print(err, ret)
 
     # cli.set_cookies('PS=72349223; JS=55329342; AS=96234812')
     # ret = cli.post(
@@ -214,41 +213,41 @@ if __name__ == '__main__':
     # print(cli.get_cookie_by_browser(domain_name='httpbin.org'))
     # print(cli.get_cookie_by_browser(browser='chrome'))
 
-    def after_request(
-        error: Exception, response: requests.Response
-    ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
-        if error:
-            return error, response
-        if response.status_code >= 300:
-            return ConnectionError('status code {}, conection error!'.format(response.status_code)), response
-        for key in response.headers:
-            response.headers[key.lower()] = response.headers[key]
-        if 'json' not in response.headers['content-type']:
-            return ValueError(response.text), response
-        return error, response.json()
+    # def after_request(
+    #     error: Exception, response: requests.Response
+    # ) -> Tuple[Union[Exception, Any], Union[requests.Response, Any]]:
+    #     if error:
+    #         return error, response
+    #     if response.status_code >= 300:
+    #         return ConnectionError('status code {}, conection error!'.format(response.status_code)), response
+    #     for key in response.headers:
+    #         response.headers[key.lower()] = response.headers[key]
+    #     if 'json' not in response.headers['content-type']:
+    #         return ValueError(response.text), response
+    #     return error, response.json()
 
-    cli.after_request = after_request
+    # err, ret = cli.rq('https://httpbin.org/get')
+    # print(err.__str__(), ret)
+    # err, ret = cli.rq('https://httpbin.org/status/304')
+    # if err:
+    #     print('error:', err.__str__())
+    # print(err.__str__(), ret.status_code, ret.text)
+    # err, ret = cli.retry(ret)
+    # print(err.__str__(), ret.status_code, ret.text)
 
-    err, ret = cli.rq('https://httpbin.org/get')
-    print(err.__str__(), ret)
-    err, ret = cli.rq('https://httpbin.org/status/304')
-    if err:
-        print('error:', err.__str__())
-    print(err.__str__(), ret.status_code, ret.text)
-    err, ret = cli.retry(ret)
-    print(err.__str__(), ret.status_code, ret.text)
+    # # Performance testing
+    # # In a strange case, the session.request default method is slower than the httpcli.rq wrapper method.
+    # session = requests.session()
+    # s_time = time.time()
+    # for i in range(10):
+    #     ret = session.request('GET', 'https://httpbin.org/get')
+    # print('request, total time(s):', time.time() - s_time)
+    # # request, total time(s): 4.60796594619751
 
-    # Performance testing
-    # In a strange case, the session.request default method is slower than the httpclinet.r_super wrapper method.
-    session = requests.session()
-    s_time = time.time()
-    for i in range(10):
-        ret = session.request('GET', 'https://httpbin.org/get')
-    print('request, total time(s):', time.time() - s_time)
-    # request, total time(s): 4.60796594619751
+    # s_time = time.time()
+    # for i in range(10):
+    #     err, ret = cli.rq('https://httpbin.org/get')
+    # print('r_super, total time(s):', time.time() - s_time)
+    # # r_super, total time(s): 4.034818649291992
 
-    s_time = time.time()
-    for i in range(10):
-        err, ret = cli.rq('https://httpbin.org/get')
-    print('r_super, total time(s):', time.time() - s_time)
-    # r_super, total time(s): 4.034818649291992
+    print(cli.is_https('httpbin.org', 80))
